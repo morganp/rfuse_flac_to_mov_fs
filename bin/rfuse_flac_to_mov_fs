@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'rfuse_flac_to_mov_fs'
+require 'rfuse_flac_to_mov_fs_opts'
+
+options = RFuseFlacToMovFSOpts.parse(ARGV)
+
+filesystem = RFuseFlacToMovFS.new(options)
+FuseFS.set_root( filesystem )
+
+File.mkdir_p( options.mountpoint )
+
+# Mount under a directory given on the command line.
+FuseFS.mount_under options.mountpoint
+FuseFS.run
+
