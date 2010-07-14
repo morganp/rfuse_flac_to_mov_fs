@@ -1,7 +1,7 @@
 require "rubygems"
 require 'fusefs'
 require 'rfuse_flac_to_mov_fs_opts'
-
+require 'pp'
 
 class RFuseFlacToMovFS
    # contents( path )
@@ -27,6 +27,7 @@ class RFuseFlacToMovFS
 
 
    def initialize( options )
+      puts "#{__FILE__} initialize( #{options.input} )"
       @base_dir = options.input
    end
 
@@ -34,9 +35,17 @@ class RFuseFlacToMovFS
       n_path = File.expand_path( @base_dir + path )
       Dir.chdir(n_path)  
 
+      # TODO 
+      # Currently just return a list of files we need to search and replace /.flac$/.mov/i
+
       files = Dir.glob('*')
       #Added command to OS X Finder not to index.
       files << 'metadata_never_index'
+
+      # incase esensitive match
+      files.each do |x|
+         x.gsub!(/\.flac$/i, ".mov")
+      end
 
       return files
    end
@@ -47,6 +56,8 @@ class RFuseFlacToMovFS
          return true
       end
 
+      #Need method which checks for .flac or jut not directory and everuthing is a file
+
       return (not File.directory?( @base_dir + path ))
    end
 
@@ -55,19 +66,40 @@ class RFuseFlacToMovFS
    end
   
    def read_file(path)
+      input = path.dup
       
-      #puts "read file #{path}"
-      if File.exists?( @base_dir + path )
-         return File.new(@base_dir + path , "r").read
+      if File.exists?( @base_dir + input)
+         return File.new(@base_dir + input , "r").read
       end
+      
+      # mmm replacment was not case sensitive so we do not actuallt
+      #   know the correct case of the file extension
+      #   NB:  the most popular format of HFS+ (mac drives) is not case sensitive
+      #   so these should resolve correctly for now
+      if input =~ /\.mov$/ 
+         input['.mov'] = '.flac'
+      end
+      #puts "read file #{path}"
+      if File.exists?( @base_dir + input)
+         return File.new(@base_dir + input , "r").read
+      end
+
       return "ERROR, file not found\n"
 
    end
 
 
    def size(path)
-      if File.exists?( @base_dir + path )
-         return File.size( @base_dir + path )
+        puts "size( #{path}"
+      input = path.dup
+      if input =~ /\.mov$/
+         puts "   Converting from mov to flac"
+         input['.mov'] = '.flac'
+      end
+
+      
+      if File.exists?( @base_dir + input )
+         return File.size( @base_dir + input )
       else
          return 16
       end
@@ -77,11 +109,11 @@ end
 
 if $0 == __FILE__
 
-   options = RFuseSymbolicFSOpts.parse(ARGV)
-   filesystem = RFuseSymbolicFS.new( options )
+   options = RFuseFlacToMovFSOpts.parse(ARGV)
+   filesystem = RFuseFlacToMovFS.new( options )
    FuseFS.set_root( filesystem )
 
-   File.mkdir_p( options.mountpoint ) 
+   FileUtils.mkdir_p( options.mountpoint ) 
 
    # Mount under a directory given on the command line.
    FuseFS.mount_under options.mountpoint
