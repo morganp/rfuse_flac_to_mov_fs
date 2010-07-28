@@ -1,7 +1,7 @@
 require "rubygems"
 require 'fusefs'
 require 'rfuse_flac_to_mov_fs_opts'
-require 'pp'
+#require 'pp'
 
 class RFuseFlacToMovFS
    # contents( path )
@@ -40,11 +40,12 @@ class RFuseFlacToMovFS
 
       files = Dir.glob('*')
       #Added command to OS X Finder not to index.
-      files << 'metadata_never_index'
+      #files << 'metadata_never_index'
 
       # incase esensitive match
       files.each do |x|
          x.gsub!(/\.flac$/i, ".mov")
+         puts x
       end
 
       return files
@@ -52,12 +53,11 @@ class RFuseFlacToMovFS
   
    def file?(path)
       #If path ends with metadata_never_index it is a file
-      if path =~ /metadata_never_index$/
-         return true
-      end
+      #if path =~ /metadata_never_index$/
+      #   return true
+      #end
 
-      #Need method which checks for .flac or jut not directory and everuthing is a file
-
+      #Need method which checks for .flac or jut not directory and everything is a file
       return (not File.directory?( @base_dir + path ))
    end
 
@@ -72,7 +72,7 @@ class RFuseFlacToMovFS
          return File.new(@base_dir + input , "r").read
       end
       
-      # mmm replacment was not case sensitive so we do not actuallt
+      # mmm replacment was not case sensitive so we do not actually
       #   know the correct case of the file extension
       #   NB:  the most popular format of HFS+ (mac drives) is not case sensitive
       #   so these should resolve correctly for now
@@ -90,8 +90,13 @@ class RFuseFlacToMovFS
 
 
    def size(path)
-        puts "size( #{path}"
+      puts "size( #{path}"
       input = path.dup
+
+      if File.exists?( @base_dir + path )
+         return File.size( @base_dir + path )
+      end
+
       if input =~ /\.mov$/
          puts "   Converting from mov to flac"
          input['.mov'] = '.flac'

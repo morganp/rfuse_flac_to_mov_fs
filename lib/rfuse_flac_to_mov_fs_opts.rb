@@ -53,7 +53,7 @@ class RFuseFlacToMovFSOpts
          end
          
          opts.on("--input N", String, "Folder FS will point to") do |n|
-            options.input = n
+            options.input = File.expand_path( n )
          end
          
         
@@ -63,7 +63,7 @@ class RFuseFlacToMovFSOpts
 
       if (options.mountpoint == "") and (options.input == "") and (options.leftovers.size==2)
          options.mountpoint = options.leftovers[0]
-         options.input      = options.leftovers[1]
+         options.input      =  File.expand_path( options.leftovers[1] )
       end
       return options
     end # parse()
